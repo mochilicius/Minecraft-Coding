@@ -1,23 +1,21 @@
-# Minecraft Coding Portfolio
+Welcome! This repository serves as a portfolio and a collaborative space for our team to showcase their coding projects.
 
-Welcome to the Minecraft Coding repository! This repository serves as a portfolio and a collaborative space for Minecraft enthusiasts to showcase their coding projects. Whether you're creating mods, plugins, or data packs, this is the place to share your work and inspire others.
+## Why post these?
 
-## About This Repository
+The projects here demonstrate practical applications of programming concepts—such as logic, automation, and design—that align with our coursework and college requirements. 
+By contributing to and collaborating on these Minecraft coding projects, we can count our work towards our required study hours and gain hands-on experience that supports our academic growth.
 
-This repository is dedicated to hosting a wide range of Minecraft-related code contributions. It serves as:
+## SK Unity & Mythic Mobs
 
-- **A Portfolio Platform:** Showcase your projects and demonstrate your skills to the community and potential collaborators.
-- **A Collaborative Space:** Collaborate with like-minded Minecraft enthusiasts on exciting projects.
-- **A Source of Inspiration:** Discover creative ideas and implementations from other contributors.
+Our projects often use [SK Unity](https://github.com/SkUnity/skUnity-Docs) and [Mythic Mobs](https://mythicmobs.net/).
 
-## How to Contribute
+**SK Unity** is a powerful scripting tool for Minecraft, and its syntax is somewhat similar to Java. 
+This makes it easier for those familiar with programming logic to create custom mechanics, automate tasks, and bring creative ideas to life in Minecraft. However, SK Unity doesn’t have many built-in tools for working directly with other plugins, so we often have to figure out clever workarounds and solutions to make everything connect smoothly.
 
-We welcome contributions from all skill levels. To add your project to this repository:
+**Mythic Mobs** lets us create custom mobs and bosses with unique abilities, behaviors, and appearances. 
+It’s essential for the creation of custom mini-games, custom items, armor, etc.
 
-1. Fork this repository.
-2. Clone your fork to your local machine.
-3. Add your project files in a new directory under `projects/<your-project-name>`. 
-4. Submit a pull request with a brief description of your project.
+By combining SK Unity and Mythic Mobs, we can build advanced features and custom content that wouldn’t be possible otherwise!
 
 ## Project Structure
 
@@ -26,16 +24,8 @@ To maintain clarity and organization, please follow this structure when contribu
 ```
 Minecraft-Coding/
 |-- projects/
-|   |-- <your-project-name>/
-|       |-- <your-project-files>
+|   |-- <plugin-or-custom-name>/
+|       |-- <your-code-files>
 ```
 
-Feel free to include a README file within your project directory to provide additional information about your project.
-
-## License
-
-By contributing to this repository, you agree that your code will be publicly available under the [MIT License](LICENSE).
-
 ---
-
-Happy coding, and let's make Minecraft even more amazing together!
