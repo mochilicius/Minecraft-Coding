@@ -1,0 +1,38 @@
+function spleefWin(winner: player):
+    loop all players:
+        if loop-player is in world "magospleef":
+            if loop-player has permission "permissions.magogame":
+                make console execute "/lp user %loop-player% demote"
+                delete loop-player's metadata value "spleefPlayer"
+                teleport loop-player to location(-99, -3, -19, world "magospleef")
+                send "&6&lCongratulations! &e%{_winner}% has won the Spleef game!" to loop-player
+    teleport {_winner} to location(-99, 1, -7, world "magospleef")
+    delete {_winner}'s metadata value "spleefPlayer"
+    
+command /startSpleef:
+    permission: op
+    trigger:
+        set {totalSpleefPlayers} to 0
+        loop all players:
+            if loop-player is in world "magospleef":
+                if loop-player has permission "permissions.magogame":
+                    add 1 to {totalSpleefPlayers}
+                    delete loop-player's metadata value "spleefPlayer"
+                    add 2 to loop-player's metadata value "spleefPlayer"
+
+
+on damage of player:
+    if victim is in world "magospleef":
+        if victim has permission "permissions.magogame":
+            if block below victim is bedrock:
+                remove 1 from victim's metadata value "spleefPlayer"
+                remove 1 from {totalSpleefPlayers}
+                teleport victim to location(-99, -20, -3, world "magospleef")
+                send "&eYou lost!" to victim
+                if {totalSpleefPlayers} = 1:
+                    loop all players:
+                        if loop-player is in world "magospleef":
+                            if loop-player has permission "permissions.magogame":
+                                if loop-player's metadata value "spleefPlayer" is 2:
+                                    send "You win!" to loop-player
+                                    spleefWin(loop-player)

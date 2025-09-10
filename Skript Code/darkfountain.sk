@@ -1,0 +1,38 @@
+command /darkfountain:
+    permission: op
+    trigger:
+        if player has permission "permissions.magogame":
+            send "&cYou can't run this command during a round!"
+        else:
+            set metadata tag "fountain" of player to chest inventory with 3 rows named "&4&lWhat are you afraid of?"
+            set {_gersonArmor} to leather horse armor with custom model data 313 named "&2&lJustice" with lore "&7Prove yourself to make things right, then." with nbt from "{""minecraft:attribute_modifiers"":{modifiers:[],show_in_tooltip:0}}"
+            dye {_gersonArmor} rgb 255, 255, 255            
+            set {_eramArmor} to leather horse armor with custom model data 306 named "&4&lPlay" with lore "&7Then try seeing in the dark." with nbt from "{""minecraft:attribute_modifiers"":{modifiers:[],show_in_tooltip:0}}"
+            dye {_eramArmor} rgb 255, 255, 255            
+            set slot 11 of metadata tag "fountain" of player to {_gersonArmor}
+            set slot 13 of metadata tag "fountain" of player to {_eramArmor}                        
+            set slot 15 of metadata tag "fountain" of player to stick with custom model data 1010 named "&9&l&oVisit Merry Magoland!" 
+            open (metadata tag "fountain" of player) to player
+
+on inventory click:
+    if event-inventory = (metadata tag "fountain" of player):
+        cancel event
+        if index of event-slot is 11:
+            resetWill(player)        
+            make console execute "/tag %player% add GersonWill"
+            close player's inventory            
+        else if index of event-slot is 13:
+            resetWill(player)        
+            make console execute "/tag %player% add EramWill"
+            close player's inventory            
+        else if index of event-slot is 15:
+            resetWill(player)        
+            make console execute "/tag %player% add EramWill"
+            close player's inventory            
+            
+function resetWill(p: player): # {_p} is automatically available from the p: player parameter
+    make console execute "/tag %{_p}% add fountainchosen"
+    make console execute "/tag %{_p}% remove EramWill"
+    make console execute "/tag %{_p}% remove GersonWill"
+    make console execute "/tag %{_p}% remove SpamtonWill"
+           

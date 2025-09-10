@@ -1,0 +1,116 @@
+
+command /magoland:
+    description: Open the Merry Magoland menu.
+    trigger:
+        if player has permission "permissions.magogame":
+            send "&cYou can't run this command during a round!"
+        else:
+            set metadata tag "magomenu" of player to chest inventory with 3 rows named "&4Click the item to pick an option!"
+            set slot 11 of metadata tag "magomenu" of player to compass named "&3Play a Minigame!"
+            set slot 15 of metadata tag "magomenu" of player to player's skull named "&9Set Merry Magoland Mask" with lore "&7Set your current Magoland Mask for when you play or go out!"
+            set slot 13 of metadata tag "magomenu" of player to stick with custom model data 1010 named "&9&l&oVisit Merry Magoland!" 
+            set slot 24 of metadata tag "magomenu" of player to a leather helmet named "&9Equip Magoland Mask" with lore "&7Click to equip your Magoland Mask, even in Survival!"
+            open (metadata tag "magomenu" of player) to player
+
+on inventory click:
+    if event-inventory = (metadata tag "magomenu" of player):
+        cancel event
+        if index of event-slot is 11:
+            set metadata tag "magogames" of player to chest inventory with 3 rows named "&lMagoland Attractions"
+            set slot 18 of metadata tag "magogames" of player to arrow named "&4Go Back A Page"            
+            set slot 26 of metadata tag "magogames" of player to arrow named "&4Next Page"                        
+            set slot 11 of metadata tag "magogames" of player to a diamond shovel named "&9&lMagoSpleef"
+            set slot 13 of metadata tag "magogames" of player to a diamond sword named "&4&lBoss Endurance"            
+            set slot 15 of metadata tag "magogames" of player to a bow named "&3&lSmash Bows"                        
+            open (metadata tag "magogames" of player) to player
+        if index of event-slot is 13:
+            teleport the player to location(43, -30, 329, world("magoland"))            
+        else if index of event-slot is 15:
+            set {_world} to "%world of player%" 
+            if {_world} is "magoland":  
+                set {magoland_mask::%player%} to player's helmet
+                set metadata tag "magoland_mask" of player to player's helmet  # Store the helmet in metadata tag
+                send "&9Your current head item has been set as your Magoland Mask!"
+            else:
+                send "&cYou can only set your Magoland Mask in Merry Magoland!"
+        else if index of event-slot is 24:
+            if player's helmet is not air:  
+                send "&cYou must remove your current helmet before equipping the Magoland Mask!"
+            else:
+                if {magoland_mask::%player%} is set:
+                    set player's helmet to {magoland_mask::%player%}
+                    send "&9Magoland Mask equipped!"
+                else:
+                    send "&cYou do not have a Magoland Mask set!"
+            
+    if event-inventory = (metadata tag "magogames" of player):
+        cancel event
+        if index of event-slot is 26:
+            set metadata tag "magogamestwo" of player to chest inventory with 3 rows named "&lMagoland Attractions Pg. 2"
+            set slot 18 of metadata tag "magogamestwo" of player to arrow named "&4Go Back A Page"                 
+            set slot 11 of metadata tag "magogamestwo" of player to a dropper named "&6&lGoing Under"            
+            open (metadata tag "magogamestwo" of player) to player
+        if index of event-slot is 18:
+            open (metadata tag "magomenu" of player) to player
+        else if index of event-slot is 11:
+            teleport the player to location(-99, -46, -42, world("magospleef"))
+        else if index of event-slot is 13:
+            teleport the player to location(49, -60, -16, world("arena"))            
+        else if index of event-slot is 15:
+            teleport the player to location(54, 103, -64, world("smashbows")) 
+            
+    if event-inventory = (metadata tag "magogamestwo" of player):
+        cancel event
+        if index of event-slot is 18:
+            open (metadata tag "magogames" of player) to player
+        else if index of event-slot is 11:
+            teleport the player to location(164, 281, 130, world("shapematch"))    
+
+on world change:
+    set {magoland_worlds::*} to "arena", "subgame", "magospleef", "smashbows", "shapematch" and "wario_stadium"
+    set {currentWorld} to "%world of player%"
+    if {magoland_worlds::*} contains {currentWorld}:
+        if {magoland_mask::%player%} is set:
+            set player's helmet to {magoland_mask::%player%}
+            send "&9Your Magoland Mask has been equipped!"
+        else:
+            send "&cYou don't have a Magoland Mask set!" 
+
+command /signaldiamond:
+    description: do not use
+    trigger:
+        make console execute "/mm mobs spawn -t MagoSignalDiamond 1 magoland,60,-61,69"
+
+command /signalleaderboard:
+    description: do not use
+    trigger:
+        make console execute "/mm mobs spawn -t MagoSignalLeaderboards 1 magoland,60,-61,69"
+        
+command /signalfunfact:
+    description: do not use
+    trigger:
+        make console execute "/mm mobs spawn -t MagoSignalFunFact 1 magoland,60,-61,69"
+
+on command:
+    if full command is "exit":
+        stop
+    if command starts with "leave":
+        stop
+    if player has permission "permissions.magogame":
+        if player is op:
+            send "&8You'd be blocked, but you're an admin, so you pass! Still, maybe use &6/exit &8before doing whatever you're doing."
+            stop
+        send "&8[!] Use &7/exit &8to leave the match"
+        cancel event
+
+command /exit:
+    description: Leaves the current gamemode. Experimental!
+    trigger:
+        set {currentWorld} to "%world of player%"
+        set {exit_commands::arena} to "/leaveArena"
+        set {exit_commands::wario_stadium} to "/leaveRacing"
+
+        if {exit_commands::%{currentWorld}%} is set:
+            make player execute command "%{exit_commands::%{currentWorld}%}%"
+        else:
+            send "&cNo exit command for this world!"

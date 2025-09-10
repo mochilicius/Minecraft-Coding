@@ -1,0 +1,82 @@
+command /smashbows:
+    permission: op
+    trigger:
+        make console execute "/scoreboard objectives add ScoreBow dummy"
+        make console execute "/scoreboard players reset dummy ScoreBow"
+        make console execute "/scoreboard objectives setdisplay sidebar.team.yellow ScoreBow"
+        loop all players:
+            if loop-player is in world "smashbows":
+                if loop-player has permission "permissions.magogame":
+                    # set {_countdown} to 3  
+                    # loop {_countdown} times:
+                    #     wait 1 second
+                    #     send "&aMatch starts in %{_countdown}% seconds!" to {_bowplayer}
+                    #     subtract 1 from {_countdown}
+                    make console execute "/team join testspleef %loop-player%"
+                    apply regeneration 255 without particles to loop-player for 99999 seconds
+                    send "&aGet ready...!" to loop-player
+                    teleport loop-player to location(54, 76, -54, world "smashbows")
+
+on damage of player:
+    if victim is in world "smashbows":
+        if victim has permission "permissions.magogame":
+            if block below victim is bedrock:
+                set {_attacker} to last attacker of victim  # Store the entity dealing the damage (the attacker)
+                add 1 to {_attacker}'s metadata value "bowkills"
+                make console execute "/scoreboard players add %{_attacker}% ScoreBow 1"  # Use the attacker variable
+                send "&eYou knocked down %victim%" to {_attacker}  # Send a message to the attacker
+                teleport victim to location(54, 76, -53, world "smashbows")
+                execute console command "/effect give %victim% minecraft:glowing 2 1 true"
+
+
+on death of villager:
+    if world of victim is "smashbows":
+        loop all players in world "smashbows":
+            if loop-player has permission "permissions.magogame":
+                teleport loop-player to location(109, 80, -54, world "smashbows")
+                make console execute "/lp user %loop-player% demote"
+                send "[[MATCH OVER]]" to loop-player
+
+        # clears top scores and igns
+        set {_top1} to ""
+        set {_top2} to ""
+        set {_top3} to ""
+        set {_score1} to 0
+        set {_score2} to 0
+        set {_score3} to 0
+
+        # Find top three players
+        loop all players in world "smashbows":
+            set {_score} to loop-player's metadata value "bowkills"
+            if {_score} > {_score1}:
+                set {_top3} to {_top2}
+                set {_score3} to {_score2}
+                set {_top2} to {_top1}
+                set {_score2} to {_score1}
+                set {_top1} to loop-player
+                set {_score1} to {_score}
+            else if {_score} > {_score2}:
+                set {_top3} to {_top2}
+                set {_score3} to {_score2}
+                set {_top2} to loop-player
+                set {_score2} to {_score}
+            else if {_score} > {_score3}:
+                set {_top3} to loop-player
+                set {_score3} to {_score}
+        
+        # Step 3: Teleport top players to podium locations
+        if {_top1} is set:
+            teleport {_top1} to location(118, 87, -53, world "smashbows")
+            send "&aYou are 1st place with %{_score1}% smashes!" to {_top1}
+        if {_top2} is set:
+            teleport {_top2} to location(118, 84, -45, world "smashbows")
+            send "&aYou are 2nd place with %{_score2}% smashes!" to {_top2}
+        if {_top3} is set:
+            teleport {_top3} to location(118, 84, -60, world "smashbows")
+            send "&aYou are 3rd place with %{_score3}% smashes!" to {_top3}
+                # Step 4: Clear metadata for next game
+        loop all players in world "smashbows":
+            delete loop-player's metadata value "bowkills"
+            make console execute "/team leave %loop-player%"
+
+        make console execute "/scoreboard objectives remove ScoreBow"

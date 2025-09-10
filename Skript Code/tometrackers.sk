@@ -1,0 +1,29 @@
+command /tometrackers:
+    permission: op
+    trigger:
+        make console execute "/scoreboard objectives add ScoreTome dummy"
+        make console execute "/scoreboard players reset dummy ScoreTome"
+        make console execute "/scoreboard objectives setdisplay sidebar.team.dark_purple ScoreTome"
+        loop all players:
+            if loop-player is in world "tometrackers":
+                if loop-player has permission "permissions.magogame":
+                    # set {_countdown} to 3  
+                    # loop {_countdown} times:
+                    #     wait 1 second
+                    #     send "&aMatch starts in %{_countdown}% seconds!" to {_bowplayer}
+                    #     subtract 1 from {_countdown}
+                    make console execute "/team join tometracker %loop-player%"
+                    apply regeneration 255 without particles to loop-player for 99999 seconds
+                    send "&aGet ready...!" to loop-player
+                    teleport loop-player to location(-60, -53, 18, world "tometrackers")
+
+on damage of player:
+    if victim is in world "tometrackers":
+        if victim has permission "permissions.magogame":
+            if block below victim is bedrock:
+                set {_attacker} to last attacker of victim  # Store the entity dealing the damage (the attacker)
+                add 1 to {_attacker}'s metadata value "bowkills"
+                make console execute "/scoreboard players add %{_attacker}% ScoreBow 1"  # Use the attacker variable
+                send "&eYou knocked down %victim%" to {_attacker}  # Send a message to the attacker
+                teleport victim to location(54, 76, -53, world "smashbows")
+                execute console command "/effect give %victim% minecraft:glowing 2 1 true"

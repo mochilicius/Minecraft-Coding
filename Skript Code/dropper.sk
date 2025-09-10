@@ -1,0 +1,128 @@
+on script load:
+    # Initialize the dropper maps list
+    set {dropperMap::1} to "532 237 -960"
+    set {dropperMap::2} to "535 238 -905"
+    set {dropperMap::3} to "242 239 -886"
+    set {dropperMap::4} to "273 281 120" 
+    set {dropperMap::5} to "272 281 6" 
+    set {dropperMap::6} to "164 281 234" 
+    set {dropperMap::7} to "56 281 188" 
+    set {dropperMap::8} to "56 281 120"
+    set {dropperMap::9} to "56 281 20"
+    set {dropperMap::10} to "272 281 235"
+    set {dropperMap::11} to "423 279 132"
+    set {dropperMap::12} to "506 281 207"
+    set {dropperMap::13} to "526 281 273"
+    set {dropperMap::14} to "423 281 280"
+    set {dropperMap::15} to "426 281 324"
+    set {dropperMap::16} to "429 281 214"
+
+command /dropperplay:
+    permission: op
+    trigger:
+        if player's metadata tag "dropperPlayer" is 1:
+            delete player's metadata tag "dropperLives"
+            delete player's metadata tag "mapNow"
+            make console execute "/scoreboard players reset %player% DropperLives"
+            make console execute "/lp user %player% demote"
+            make console execute "/team leave %player%"
+            delete player's metadata tag "dropperPlayer"
+        else:
+            set player's metadata tag "dropperPlayer" to 1
+            set player's metadata tag "dropperLives" to 20
+            make console execute "/scoreboard players set %player% DropperLives 20"
+            make console execute "/lp user %player% promote"
+            # Randomize the map order for this player
+            set {dropper::%player%DropperMaps::*} to shuffled {dropperMap::*}
+            set player's metadata tag "mapNow" to 1
+            make console execute "/team join dropper %player%"
+            # Teleport to the first map
+            make console execute "/execute in minecraft:shapematch run minecraft:teleport %player% %{dropper::%player%DropperMaps::1}%"
+
+command /dropperteleport:
+    permission: op
+    trigger:
+        if player is in world "shapematch":
+            if player's metadata value "dropperPlayer" is 1:
+                # Teleport to the current map
+                set {_mapNow} to player's metadata tag "mapNow"
+                make console execute "/execute in minecraft:shapematch run minecraft:teleport %player% %{dropper::%player%DropperMaps::%{_mapNow}%}%"
+                send title "&b&l Map %{_mapNow}%" with subtitle " " to player for 1 seconds with fadein 1 second and fadeout 1 second
+
+on damage of player:
+    if victim is in world "shapematch":
+        if victim's metadata value "dropperPlayer" is 1:
+            if victim's metadata "dropperLives" <= 0: 
+                send title "&l&4YOU LOST!" with subtitle "&o&7Better luck next time..." to victim for 3 seconds with fadein 1 second and fade out 1 second # makes it red bold and shows up on screen 
+                send "&l&4 You lost!" to victim
+                delete victim's metadata tag "dropperLives"
+                delete victim's metadata tag "mapNow"                        
+                make console execute "/team leave %victim%"         
+                make console execute "/lp user %victim% demote"                        
+                make console execute "/scoreboard players reset %victim% DropperLives"
+                delete victim's metadata tag "dropperPlayer"        
+                send title "&b&l You lost!" with subtitle " Better luck next time!" to victim for 1 seconds with fadein 1 second and fadeout 1 second
+                teleport victim to location(164, 281, 130, world "shapematch")
+                stop
+            remove 1 from victim's metadata tag "dropperLives"
+            make console execute "/scoreboard players remove %victim% DropperLives 1"
+            set {tempLives_} to victim's metadata tag "dropperLives"
+            teleport victim to location(164, 281, 130, world "shapematch")
+            send title "&b&l You died!" with subtitle " %{tempLives_}% lives remaining " to victim for 1 seconds with fadein 1 second and fadeout 1 second         
+
+command /droppernextmap:
+    permission: op
+    trigger:
+        if player is in world "shapematch":
+            if player's metadata value "dropperPlayer" is 1:
+                # Increment the map counter
+                add 1 to player's metadata tag "mapNow"
+                set {_mapNow} to player's metadata tag "mapNow"
+                # Get the total number of maps
+                set {_totalMaps} to size of {dropper::%player%DropperMaps::*}
+                # for dynamic: if {_mapNow} > {_totalMaps}:
+                if {_mapNow} > 9:
+                    if player's metadata "dropperLives" > 19: 
+                        send title "&l&6YOU WON!" with subtitle "&o&9Got 5 Diamond Apple Slices for your performance!" to player for 3 seconds with fadein 1 second and fade out 1 second
+                        send "&l&6 You've cleared the Dropper without dying ONCE!!! UNBELIEVABLE!" to player
+                        make console execute "/scoreboard players add %player% DiamondSlices 5"                
+                    else if player's metadata "dropperLives" > 15: 
+                        send title "&l&6YOU WON!" with subtitle "&o&9Got 3 Diamond Apple Slices for your performance!" to player for 3 seconds with fadein 1 second and fade out 1 second
+                        send "&l&6 You've cleared the Dropper near PERFECTLY! AMAZING!" to player
+                        make console execute "/scoreboard players add %player% DiamondSlices 3"
+                    else if player's metadata "dropperLives" > 7: 
+                        send title "&l&6YOU WON!" with subtitle "&o&9Got 2 Diamond Apple Slices for your performance!" to player for 3 seconds with fadein 1 second and fade out 1 second
+                        send "&l&6 You've cleared the Dropper with lives to spare! Well done!" to player
+                        make console execute "/scoreboard players add %player% DiamondSlices 2"
+                    else if player's metadata "dropperLives" >= 0: 
+                        send title "&l&6YOU WON!" with subtitle "&o&9Got a Diamond Apple Slice for your performance!" to player for 3 seconds with fadein 1 second and fade out 1 second
+                        send "&l&6 You've cleared the Dropper! Nice!" to player
+                        make console execute "/scoreboard players add %player% DiamondSlices 1"
+
+                    #removing from game logic
+                    delete player's metadata tag "dropperLives"
+                    delete player's metadata tag "mapNow"
+                    make console execute "/lp user %player% demote"
+                    make console execute "/scoreboard players reset %player% DropperLives"
+                    delete player's metadata tag "dropperPlayer"                                    
+                    make console execute "/team leave %player%"
+                    make console execute "/mvtp %player% shapematch"
+                    stop
+                #normal next map logic 
+                make console execute "/execute in minecraft:shapematch run minecraft:teleport %player% %{dropper::%player%DropperMaps::%{_mapNow}%}%"
+                send title "&b&l Map %{_mapNow}%" with subtitle " " to player for 1 seconds with fadein 1 second and fadeout 1 second    
+
+## DEBUG TOOLS ##
+
+command /setmap <number>: 
+    permission: op
+    trigger:
+        # Set the current map index to the provided argument
+        set player's metadata tag "mapNow" to arg-1
+        set {_mapNow} to player's metadata tag "mapNow"
+
+command /setDropperLives <number>:
+    permission: op
+    trigger:
+        set player's metadata "dropperLives" to arg-1
+        send "&a %player%'s dropper lives set to %arg-1%!"

@@ -1,0 +1,387 @@
+on load:
+    set {racerStartLocal::1} to location(-557, -17, 360, world("wario_stadium"), 90, 0) # Yaw set to 90 (West)
+    set {racerStartLocal::2} to location(-560, -17, 357, world("wario_stadium"), 90, 0) 
+    set {racerStartLocal::3} to location(-552, -17, 356, world("wario_stadium"), 90, 0) 
+    set {racerStartLocal::4} to location(-564, -17, 354, world("wario_stadium"), 90, 0) 
+    set {racerStartLocal::5} to location(-560, 17, 353, world("wario_stadium"), 90, 0) 
+    set {racerStartLocal::6} to location(-557, -17, 353, world("wario_stadium"), 90, 0) 
+    set {racerStartLocal::7} to location(-552, -17, 352, world("wario_stadium"), 90, 0) 
+    set {racerStartLocal::8} to location(-563, -17, 350, world("wario_stadium"), 90, 0) 
+    set {racerStartLocal::9} to location(-559, -17, 349, world("wario_stadium"), 90, 0) 
+    set {racerStartLocal::10} to location(-554, -17, 349, world("wario_stadium"), 90, 0) 
+    set {racerStartLocal::11} to location(-562, -17, 347, world("wario_stadium"), 90, 0) 
+    set {racerStartLocal::12} to location(-554, -17, 346, world("wario_stadium"), 90, 0) 
+    set {raceStarting} to false
+    set {raceInProgress} to false
+
+# info -> done racer is what tells the system someone is part of the total
+# ready is what tells them they want to play, like a vote
+function setSlime():
+    loop all players:
+        if loop-player is in world("wario_stadium"):
+            if loop-player has scoreboard tag "racePlayer": # selects all racers with menu
+                set slot 8 of loop-player to slime ball named "&aReady Up!"
+                set {raceStarting} to false # makes sure it isn't starting
+                
+function setFirecharge():
+    loop all players:
+        if loop-player is in world("wario_stadium"):
+            if loop-player has scoreboard tag "racePlayer": # selects all racers with menu
+                set slot 8 of loop-player to fire charge named "&6Nevermind..."
+                set {raceStarting} to true
+
+function grabTotalRacers():
+    set {totalRacers} to 0 # resets
+    loop all players: 
+        if loop-player is in world("wario_stadium"):
+            if loop-player has permission "permissions.magogame":
+                if loop-player has scoreboard tag "racePlayer":
+                    add 1 to {totalRacers} # grabs total
+
+command /raceStarter:
+    permission: op
+    trigger:
+        set {raceStarting} to true
+        grabTotalRacers()
+        # checks minimum player number
+        if {totalRacers} < 2:
+            set {raceStarting} to false
+            loop all players:
+                if loop-player is in world("wario_stadium"):
+                    if loop-player has permission "permissions.magogame":
+                        send "&cNot enough racers, you need at least 2 racers to start!" to loop-player
+            setSlime()
+            stop
+        # resets variables
+        set {racerNumber} to 0
+        set {finishers} to 0
+        delete {finishingOrder::*} 
+
+        # allows people to cancel
+        setFirecharge()
+        # starts countdown
+        if {totalRacers} is 2:
+            set {seconds} to 20
+            loop {seconds} times:
+                if {raceStarting} is false:
+                    stop # stops if anything makes it stop the countdown
+                set {remainingS} to {seconds} - loop-number + 1
+                loop all players:
+                    if loop-player is in world("wario_stadium"):
+                        send action bar "&eRace starting in &c%{remainingS}% &eseconds..." to loop-player
+                wait 1 second
+        else:
+            set {seconds} to 15
+            loop {seconds} times:
+                if {raceStarting} is false:
+                    stop # stops if anything makes it stop the countdown
+                set {remainingS} to {seconds} - loop-number + 1
+                loop all players:
+                    if loop-player is in world("wario_stadium"):
+                        send action bar "&eRace starting in &c%{remainingS}% &eseconds..." to loop-player
+                wait 1 second
+        # stops in case of cancelling the vote
+        if {raceStarting} is false: 
+            stop
+        make console execute "/mm mobs spawn RaceSetup 1 wario_stadium,-633,-61,353"   
+
+command /raceStart:
+    permission: op
+    trigger:
+        if {raceInProgress} is true:
+            stop  # Prevent double-start
+        loop all players: # teleports players
+            if loop-player is in world("wario_stadium"):
+                if loop-player has permission "permissions.magogame":
+                    delete loop-player's metadata value "finishedLaps"
+                    set loop-player's metadata value "finishedLaps" to 0 # lap counter and double check if racing
+                    make console execute "/clear %loop-player%" # clears inventory for race
+                    add 1 to {racerNumber}
+                    teleport loop-player to {racerStartLocal::%{racerNumber}%}
+                    send action bar "&b&lYou are Racer %{racerNumber}%" to loop-player
+                else:
+                    send "You are not a racer." to loop-player # Debugging message
+        startRaceFunction()
+
+# *actually* starts the race, has 3 second countdown, is used **after** teleportation 
+function startRaceFunction():
+    loop all players:
+        if loop-player is in world("wario_stadium"):
+            if loop-player has scoreboard tag "racePlayer":
+                if loop-player has permission "permissions.magogame":
+                    make console execute "/tag %loop-player% remove removing" # makes sure no one who gave up on leaving has a buggy thing
+                    # Countdown before race starts
+                    wait 10 second
+                    send title "&6READY!" with subtitle " " to loop-player for 1 second 
+                    wait 1 second
+                    send title "&aSET!" with subtitle " " to loop-player for 1 second 
+                    wait 1 second
+                    send title "&e&lGO!!!" with subtitle " " to loop-player for 1 second
+    set {raceInProgress} to true # marks race as happening, for the /exit command to properly change the count
+    set {raceStarting} to false
+
+function resetKarts():
+    loop all players:
+        if loop-player is in world("wario_stadium"):
+            make console execute "/tag %loop-player% remove RickKart"          
+            make console execute "/tag %loop-player% remove TennaKart"               
+            make console execute "/tag %loop-player% remove SealKart"
+
+function resetKart(p: player): # {_p} is automatically available from the p: player parameter
+    make console execute "/tag %{_p}% remove RickKart"
+    make console execute "/tag %{_p}% remove TennaKart"
+    make console execute "/tag %{_p}% remove SealKart"
+
+on inventory click:
+    if player is in world("wario_stadium"):
+        if event-inventory = (metadata tag "kartmenu" of player):
+            if index of event-slot is 20:
+                cancel event
+                resetKart(player)
+                make console execute "/tag %player% add RickKart"
+                send "You selected &9Rick, Kine and Coo! &rThey're happy to help!" to player
+                open (metadata tag "racemenu" of player) to player                
+            else if index of event-slot is 22:
+                cancel event
+                resetKart(player)
+                make console execute "/tag %player% add TennaKart"
+                send "You selected &2Vinny Vici! &rHe's not happy about this at all!" to player
+                open (metadata tag "racemenu" of player) to player                                
+            else if index of event-slot is 24:
+                cancel event
+                resetKart(player)
+                make console execute "/tag %player% add SealKart"
+                send "You selected &la Seal! &rIsn't it cute?" to player             
+                open (metadata tag "racemenu" of player) to player                                
+        if event-inventory = (metadata tag "racemenu" of player):
+            if index of event-slot is 0:
+                cancel event
+            else if index of event-slot is 11:
+                cancel event
+                set metadata tag "kartmenu" of player to chest inventory with 6 rows named "&9&lSelect your Kart!"
+                set {_rickArmor} to leather horse armor with custom model data 89 named "&6&lRick, Kine & Coo (Standard)" with lore "&7Dynamically change into the Hamster, Fish and Bird dynamic trio!"
+                dye {_rickArmor} rgb 255, 255, 255
+                set {_tennaArmor} to leather horse armor with custom model data 53 named "&2&lTenna" with lore "&7This was not in his contract but he's doing it anyway."
+                dye {_tennaArmor} rgb 255, 255, 255
+                set {_sealArmor} to leather horse armor with custom model data 218 named "&lSeal" with lore "&7Cute little thing. It flies with its flaps!"
+                dye {_sealArmor} rgb 255, 255, 255
+                set slot 20 of metadata tag "kartmenu" of player to {_rickArmor}
+                set slot 22 of metadata tag "kartmenu" of player to {_tennaArmor}
+                set slot 24 of metadata tag "kartmenu" of player to {_sealArmor}
+                resetKart(player)
+                open (metadata tag "kartmenu" of player) to player
+            else if index of event-slot is 13:
+                cancel event
+                # TODO tutorial
+            else if index of event-slot is 15:
+                cancel event
+                close player's inventory
+                send action bar "&aClick the slime ball to start!" to player
+                set slot 8 of player to a slime ball named "&aReady Up!"
+
+on rightclick with compass:
+    if player is in world("wario_stadium"):
+        if player is holding a compass named "Racing Menu" in main hand:
+            set metadata tag "racemenu" of player to chest inventory with 3 rows named "&4Click to pick an option!"
+            set slot 11 of metadata tag "racemenu" of player to minecart named "&3&lKart Selection"
+            set slot 13 of metadata tag "racemenu" of player to player's skull named "&9Race Tutorial" with lore "&7Get to know the basics of racing!"
+            set slot 15 of metadata tag "racemenu" of player to stick with custom model data 1010 named "&9&l&oDone!" with lore "Done setting up? Click me to get an item to ready up!"
+            open (metadata tag "racemenu" of player) to player
+            
+on right click with fire charge:
+    if player is in world("wario_stadium"):
+        if player is holding a fire charge named "&6Nevermind..." in main hand:
+            if player has scoreboard tag "isOnCooldown":
+                send action bar "&cOn cooldown! Wait a little bit!" to player
+                stop
+            cancel event
+            setSlime()
+            send action bar "&cYou cancelled the countdown." to player
+            make console execute "/tag %player% add isOnCooldown"
+            wait 1.5 seconds
+            make console execute "/tag %player% remove isOnCooldown"
+
+on right click with slime ball:
+    if player is in world("wario_stadium"):
+        if player is holding a slime ball named "&aReady Up!" in main hand:
+            if player has scoreboard tag "isOnCooldown":
+                send action bar "&c On cooldown! Wait a lil' bit!" to player
+                stop
+            cancel event
+            setFirecharge()
+            make console execute "/raceStarter"
+            send action bar "&aCountdown started!" to player
+            make console execute "/tag %player% add isOnCooldown"
+            wait 1.5 seconds
+            make console execute "/tag %player% remove isOnCooldown"
+
+on drop:
+    if player is in world("wario_stadium"):
+        if player has scoreboard tag "racePlayer":
+            cancel event
+on swap hand items:
+    if player is in world("wario_stadium"):
+        if player has scoreboard tag "racePlayer":
+            cancel event
+
+command /setRacer:
+    permission: op
+    trigger:
+        if {raceStarting} is true:
+            send "&cUh Oh! A race is about to start.. be quick, and you'll make it in time!" to player
+            loop all players:
+                if loop-player has scoreboard tag "racePlayer":
+                    send action bar "&eNew player joined! Maybe make time for them?" to loop-player
+
+        if player has scoreboard tag "racePlayer":
+            if player has scoreboard tag "removing":
+                set slot 0 of player to air
+                make console execute "/tag %player% remove racePlayer"
+                make console execute "/tag %player% remove removing"
+                make console execute "lp user %player% demote"
+                set {raceStarting} to false
+                send action bar "&cYou're no longer a racer." to player
+                make console execute "/clear %player%"
+                stop
+            make console execute "/tag %player% add removing"
+            send action bar "&cUse the command again if you're sure!" to player
+        else:
+            if player is in world("wario_stadium"):
+                make console execute "/tag %player% add racePlayer"
+                make console execute "lp user %player% promote"
+                send action bar "&aYou're now a racer! Select your setup!" to player
+                set slot 0 of player to compass named "Racing Menu"
+
+command /finishLap:
+    permission: op
+    trigger:
+        if player is in world("wario_stadium"):
+            if player has permission "permissions.magogame":
+                if player has scoreboard tag "racePlayer":
+                    add 1 to player's metadata "finishedLaps"
+                    set {playerLap} to player's metadata value "finishedLaps"
+                    send title "&a&lLap Cleared!" with subtitle "&7 LAP %{playerLap}% / 3!" to player for 3 seconds with fadein 1 second and fade out 1 second
+
+                    if player's metadata value "finishedLaps" is 3:
+                        add 1 to {finishers}
+                        if {finishingOrder::*} does not contain player: # Ensures a player is only counted once
+                            add player to {finishingOrder::*} # Stores finishing order
+
+                            set {finishingPosition} to size of {finishingOrder::*}
+
+                            if {finishingPosition} is 1:
+                                broadcast "&e%player% finished in &6FIRST PLACE!" in world("wario_stadium")
+                            else if {finishingPosition} is 2:
+                                broadcast "&e%player% finished in &7SECOND PLACE!" in world("wario_stadium")
+                            else if {finishingPosition} is 3:
+                                broadcast "&e%player% finished in &cTHIRD PLACE!" in world("wario_stadium")
+                                make console execute "/raceEnd"                          
+                    if {finishers} = {totalRacers}:
+                        make console execute "/raceEnd"
+                        set {raceStarting} to false # double check
+                        set {raceInProgress} to false # double check
+        else:
+            send "What the hell? DEBUG 3." to player
+
+
+command /raceEnd: # TODO: add parameter that is a tag with the track name, it'll be attached to the players playing that track and only end the race for them as needed
+    permission: op
+    trigger:
+        loop all players:
+            if loop-player is in world("wario_stadium"):
+                if loop-player has permission "permissions.magogame":
+                    if loop-player has scoreboard tag "racePlayer":
+                        send title "&c&lRACE OVER!!" with subtitle "" to loop-player for 3 seconds with fadein 1 second and fade out 1 second
+                        make console execute "/tag %loop-player% remove racePlayer"
+                        make console execute "lp user %loop-player% demote"
+                        make console execute "/mm mobs spawn RaceEnder 1 wario_stadium,-536,2,88"
+                        # teleport loop-player to location()
+            set {totalRacers} to 0  # <-- Reset here
+            set {raceStarting} to false # double check
+            set {raceInProgress} to false # double check
+
+        wait 1.5 seconds
+        # announcing winners
+        if {finishingOrder::1} is set:
+            broadcast "&6First Place: &e%{finishingOrder::1}% &7- Congratulations!" to world("wario_stadium")
+            teleport {finishingOrder::1} to location(-607, -14, 550, world("wario_stadium"))            
+        if {finishingOrder::2} is set:
+            broadcast "&7Second Place: &e%{finishingOrder::2}%" to world("wario_stadium")
+            teleport {finishingOrder::2} to location(-612, -14, 550, world("wario_stadium"))                                      
+        if {finishingOrder::3} is set:
+            broadcast "&cThird Place: &e%{finishingOrder::3}%" to world("wario_stadium")
+            teleport {finishingOrder::3} to location(-617, -14, 550, world("wario_stadium"))            
+
+        loop all players:
+            if loop-player is in world("wario_stadium"):
+                if loop-player has permission "permissions.magogame":
+                    delete loop-player's metadata value "finishedLaps"
+                    make console execute "/lp user %loop-player% demote"
+                    make console execute "/tag %loop-player% remove racePlayer"
+
+on disconnect:
+    if player has scoreboard tag "racePlayer":
+        if player has permission "permissions.magogame":
+            if {raceStarting} is true: 
+                set {raceStarting} to false
+                make console execute "/tag %player% remove racePlayer"
+                make console execute "/lp user %player% demote"
+                loop all players:
+                    if loop-player has scoreboard tag "racePlayer":
+                        send action bar "&eStartup stopped, &c%player% &edisconnected!" to loop-player
+                        setSlime()
+            if {raceInProgress} is true:
+                remove 1 from {totalRacers}
+                grabTotalRacers()
+                loop all players:
+                    if loop-player has scoreboard tag "racePlayer":
+                        send action bar "&eSome left, but the race goes on!" to loop-player
+
+# DEBUG
+command /toggleStartStatus:
+    permission: op
+    trigger:
+        send "Toggling the variable." to player
+        if {raceStarting} is false:
+            set {raceStarting} to true
+            send "NOW IS TRUE" to player
+            stop
+        else if {raceStarting} is true:
+            set {raceStarting} to false
+            send "NOW IS FALSE" to player
+            stop
+
+command /forceEndRace:
+    permission: op
+    trigger:
+        set {raceInProgress} to false
+        make console execute "/raceEnd"
+
+command /leaveRacing:
+    trigger:
+        if {raceStarting} is true:
+            send "&c You can't leave while the race is starting! Stop the count first!" to player
+            stop
+        if player has scoreboard tag "racePlayer":
+            if {raceInProgress} is true:
+                remove 1 from {totalRacers}
+                grabTotalRacers()
+                if {totalRacers} < 1:
+                    make console execute "/raceEnd"  # Force end if no racers left
+                    stop
+                loop all players:
+                    if loop-player has scoreboard tag "racePlayer":
+                        send action bar "&eSome left, but the race goes on!" to loop-player
+                stop
+            if player has scoreboard tag "removing":
+                set slot 0 of player to air
+                make console execute "/tag %player% remove racePlayer"
+                make console execute "/tag %player% remove removing"
+                make console execute "lp user %player% demote"
+                set {raceStarting} to false
+                send action bar "&cYou're no longer racing." to player
+                make console execute "/clear %player%"
+                stop
+        make console execute "/tag %player% add removing"
+        send action bar "&cUse the command again if you're sure!" to player
+        

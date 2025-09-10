@@ -1,0 +1,179 @@
+on script load:
+    set {bossSpawn::12} to "GlassJoe1Arena"
+    set {bossSpawn::11} to "MachoMan"
+    set {bossSpawn::10} to "TrollArena"
+    set {bossSpawn::9} to "FrankensteinArena"
+    set {bossSpawn::8} to "SpamtonArena"
+    set {bossSpawn::7} to "ArchburnArena"
+    set {bossSpawn::6} to "IceologerArena"
+    set {bossSpawn::5} to "DraculaArena"
+    set {bossSpawn::4} to "NoctomArena"     
+    set {bossSpawn::3} to "ScorpionIntroArena" 
+    set {bossSpawn::2} to "TennaArena" 
+    set {bossSpawn::1} to "GladiatorArena" 
+
+command /spawnBoss:
+    usage: /spawnBoss
+    permission: op
+    permission message: You don't have permission to use this command.
+    trigger:
+        if {remainingBosses} > 0:
+            if {bossSpawn::%{remainingBosses}%} is set:
+                make console execute "/mm mob spawn %{bossSpawn::%{remainingBosses}%}% 1 arena,30,-59,-16" # /mm mobs spawn GlassJoe1Arena 1 arena,30,-59,-16
+            else:
+                send "[ENDURANCE ERROR 1]" #idk if this will happen
+        else:
+            send "[WARNING] All bosses have already been defeated!"
+
+command /startEndurance:
+    permission: op
+    trigger:
+        set {canBossDrops} to 1
+        set {openDoors} to 1
+        set {enduranceLives} to 4 # resets lives
+        set {endurancePlayerTotal} to 0 # resets total players
+        set {remainingBosses} to 12 #restarts boss count
+        loop all players:
+            if loop-player is in world "arena":
+                if loop-player has permission "permissions.magogame":
+                    add 1 to {endurancePlayerTotal} # adds each player to player total
+                    delete loop-player's metadata value "endurancePlayer"
+                    set loop-player's metadata value "endurancePlayer" to 1 # marks them as playing endurance (foreshadowing)
+                    clear player's inventory
+                    make console execute "/team join arenaplayer %loop-player%"
+                    add 1 to {enduranceLives} # 1 extra life for each player
+                    teleport loop-player to location(34, -59, -23, world "arena") # tps to middle of the arena
+
+command /leaveArena:
+    description: Leaves the arena/game.
+    trigger:
+        if player has permission "permissions.magogame":
+            if player is in world "arena":
+                if {endurancePlayerTotal} > 1:
+                    teleport player to location(50, -60, -16, world "arena")                
+                    clear player's inventory
+                    delete player's metadata value {endurancePlayer}
+                    make console execute "/lp user %player% demote"
+                    make console execute "/team leave %player%"
+                    remove 1 from {endurancePlayerTotal} # decreases player count so next command works
+                else if {endurancePlayerTotal} = 1:
+                    make console execute "/endendurance"
+                    teleport player to location(50, -60, -16, world "arena")
+
+on death of player:
+    if victim is in world "arena":
+        if victim has permission "permissions.magogame":
+            if victim's metadata value "endurancePlayer" is 1:
+                remove 1 from {enduranceLives}
+                if {enduranceLives} = 0: 
+                    send title "&l&4YOU LOST!" with subtitle "&o&7Better luck next time..." to victim for 3 seconds with fadein 1 second and fade out 1 second # makes it red bold and shows up on screen 
+                    send "&l&4 You lost!" to victim
+                    make console execute "/endEndurance"
+                else if {enduranceLives} != 0:
+                    loop all players:
+                        if loop-player's metadata value "endurancePlayer" is 1:
+                            send "&e&lEndurance Lives Remaining: %{enduranceLives}%" to loop-player
+
+on death of player:
+    if victim is in world "arena":
+        if victim has permission "permissions.magogame":
+            if victim's metadata value "endurancePlayer" is 1:
+                send title "&c&lYOU DIED!" with subtitle "" to victim for 2 seconds with fade out 1 second # makes it red bold and shows up on screen
+                wait 1 seconds
+                send title "&l&7Respawn in 3" with subtitle " " to victim for 1 second 
+                wait 1 second
+                send title "&l&7Respawn in 2" with subtitle " " to victim for 1 second 
+                wait 1 second
+                send title "&l&7Respawn in 1" with subtitle " " to victim for 1 second 
+                wait 1 second
+                teleport victim to location(34, -59, -23, world "arena")
+                send title "&o&fRespawned!" with subtitle " " to victim for 1 seconds with fade out 1 second
+
+command /bossDeath:
+    permission: op
+    trigger:
+        if {canBossDrops} is 1:
+            remove 1 from {remainingBosses}
+            if {remainingBosses} = 0:
+                make console execute "/endEndurance"
+            else if {remainingBosses} > 0:
+                loop all players:
+                    if loop-player has permission "permissions.magogame":
+                        if loop-player's metadata value "endurancePlayer" is 1:
+                            send title "&6&lBOSS DEFEATED!" with subtitle "&3&oBOSSES REMAINING: %{remainingBosses}%" to loop-player for 3 seconds with fadein 1 second and fade out 1 second
+                            send "&7&oIn a couple seconds, a cow will show up to spawn the next boss!" to loop-player
+                            give loop-player 20 emeralds
+                wait 1.5 seconds
+                make console execute "/mm m spawn -t ArenaBossDrops 1 arena,34,-50,-17" # spawns the pig
+
+
+
+command /edoors:
+    permission: op
+    trigger:
+        if {openDoors} = 1:
+            make console execute "/execute in minecraft:arena run fill 37 -59 -7 32 -57 -7 minecraft:air"  # OPENS DOORS
+            add 1 to {openDoors}
+            set {_players} to "" # store players for bossbar visibility
+            loop all players:
+                if loop-player has permission "permissions.magogame":
+                    if loop-player's metadata value "endurancePlayer" is 1:
+                        play sound "magolor.shopgolor" with volume 0.25 to loop-player
+                        send "&o&7Shops are open! Be quick before they close!" to loop-player
+                        send title " " with subtitle "&o&7 Next Boss: %{bossSpawn::%{remainingBosses}%}%" to loop-player with fadein 1 second fade out 1 second
+            make console execute "/execute in minecraft:arena run bossbar set endurance:countdown players @a[team=arenaplayer]"
+            # Countdown logic (45 seconds)
+            set {_time} to 45
+            make console execute "/bossbar set endurance:countdown max %{_time}%"
+            while {_time} > 0:
+                make console execute "/bossbar set endurance:countdown value %{_time}%"
+                wait 1 second
+                remove 1 from {_time}
+            # remove bar and close doors
+            make console execute "/edoors"
+
+        else if {openDoors} = 2:
+            make console execute "/execute in minecraft:arena run fill 37 -59 -7 32 -57 -7 minecraft:dark_oak_planks" # CLOSES DOORS
+            make console execute "/bossbar set endurance:countdown players none"
+            remove 1 from {openDoors}
+            loop all players:
+                if loop-player has permission "permissions.magogame":
+                    if loop-player's metadata value "endurancePlayer" is 1:
+                        stop sound "magolor.shopgolor" for loop-player
+                        send "&o&7Shops are closed!" to loop-player
+                        teleport loop-player to location(34, -59, -23, world "arena") #middle of arena after doors are closed
+        else if {openDoors} = 0:
+            make console execute "/say [ENDURANCE ERROR: 2]"
+        else if {openDoors} = 3:
+            make console execute "/say [ENDURANCE ERROR: 3]"  
+
+command /endEndurance:
+    permission: op
+    trigger:
+        set {canBossDrops} to 0
+        loop all players in world "arena":
+            if loop-player has permission "permissions.magogame":
+                if loop-player's metadata value "endurancePlayer" = 1:
+                    make console execute "/team leave %loop-player%"
+                    make console execute "/lp user %loop-player% demote"
+                    delete loop-player's metadata value "endurancePlayer"
+                    if {remainingBosses} = 0:
+                        send title "&l&6YOU WON!" with subtitle "&o&7Great job pals!!" to loop-player for 3 seconds with fadein 1 second and fade out 1 second
+                    else if {remainingBosses} > 0:
+                        make console execute "/xp reset %loop-player%"
+                        clear loop-player's inventory
+                        send title "&l&4YOU LOST!" with subtitle "&o&7Better luck next time..." to loop-player for 2 seconds with fadein 1 second and fade out 1 second
+        make console execute "/execute in minecraft:arena run fill 37 -59 -7 32 -57 -7 minecraft:dark_oak_planks" # CLOSEs DOORS
+        make console execute "/mm m spawn -t ArenaSignaler 1 arena,34,-50,-17"        
+        make console execute "/execute in minecraft:arena positioned 34 -50 -17 run minecraft:kill @e[distance=..10,type=!player]"
+        make console execute "/execute in minecraft:arena positioned 34 -50 -17 run minecraft:kill @e[distance=..10,type=item]"
+        set {openDoors} to 1
+
+## DEBUG TOOLS ##
+
+command /setEnduranceLives <number>:
+    permission: op
+    trigger:
+        set {enduranceLives} to arg-1
+        send "&aEndurance lives set to %arg-1%!"
+
